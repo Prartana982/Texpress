@@ -2,7 +2,19 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-export type Category = 'LATEST' | 'SOFTWARE' | 'AI' | 'HARDWARE' | 'ARVR' | 'CYBERSECURITY';
+export type Category = 
+  | 'ALL' 
+  | 'AI / GenAI' 
+  | 'Cybersecurity' 
+  | 'AR/VR' 
+  | 'Software Development' 
+  | 'Hardware & Semiconductors' 
+  | 'Cloud & DevOps' 
+  | 'Data Science & Analytics' 
+  | 'Blockchain & Web3' 
+  | 'Startups & Business Tech' 
+  | 'Consumer Tech' 
+  | 'General Tech';
 
 interface CategoryContextType {
   category: Category;
@@ -12,7 +24,7 @@ interface CategoryContextType {
 const CategoryContext = createContext<CategoryContextType | undefined>(undefined);
 
 export function CategoryProvider({ children }: { children: ReactNode }) {
-  const [category, setCategory] = useState<Category>('LATEST');
+  const [category, setCategory] = useState<Category>('ALL');
 
   return (
     <CategoryContext.Provider value={{ category, setCategory }}>

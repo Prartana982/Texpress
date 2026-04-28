@@ -9,6 +9,7 @@ export interface Article {
   source: {
     name: string;
   };
+  categories: string[];
 }
 
 const parser = new Parser();
@@ -20,41 +21,52 @@ const RSS_FEEDS = [
   { name: 'Hacker News', url: 'https://news.ycombinator.com/rss' }
 ];
 
-const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  SOFTWARE: ['software', 'programming', 'code', 'developer', 'framework', 'library', 'api', 'backend', 'frontend', 'git', 'saas'],
-  AI: ['ai', 'intelligence', 'artificial', 'model', 'neural', 'openai', 'claude', 'gemini', 'llm', 'machine learning', 'deep learning', 'chatgpt'],
-  HARDWARE: ['hardware', 'chip', 'processor', 'nvidia', 'intel', 'amd', 'apple silicon', 'gadget', 'device', 'console', 'laptop', 'smartphone', 'gpu', 'cpu'],
-  ARVR: ['ar', 'vr', 'mixed reality', 'vision pro', 'meta quest', 'metaverse', 'oculus', 'augmented reality', 'virtual reality', 'spatial computing'],
-  CYBERSECURITY: ['security', 'cybersecurity', 'hack', 'breach', 'vulnerability', 'exploit', 'malware', 'ransomware', 'phishing', 'encryption', 'firewall'],
+export const CATEGORY_MAP: Record<string, string[]> = {
+  "AI / GenAI": ["ai", "artificial intelligence", "genai", "openai", "chatgpt", "llm", "neural", "machine learning", "deep learning", "transformer", "diffusion", "claude", "gemini", "stable diffusion"],
+  "Cybersecurity": ["cyber", "security", "hack", "malware", "ransomware", "breach", "exploit", "vulnerability", "encryption", "phishing", "firewall", "zero-day"],
+  "AR/VR": ["ar", "vr", "mixed reality", "vision pro", "meta quest", "oculus", "augmented reality", "virtual reality", "spatial computing", "metaverse"],
+  "Software Development": ["coding", "programming", "software", "development", "developer", "framework", "library", "react", "node", "typescript", "git", "api", "backend", "frontend"],
+  "Hardware & Semiconductors": ["hardware", "chip", "semiconductor", "processor", "gpu", "cpu", "nvidia", "intel", "amd", "apple silicon", "tsmc", "arm"],
+  "Cloud & DevOps": ["cloud", "aws", "azure", "google cloud", "devops", "kubernetes", "docker", "serverless", "infrastructure", "saas", "paas"],
+  "Data Science & Analytics": ["data", "analytics", "big data", "sql", "dashboard", "visualization", "bi", "predictive", "statistics", "dataset"],
+  "Blockchain & Web3": ["blockchain", "crypto", "bitcoin", "ethereum", "web3", "nft", "smart contract", "dao", "defi", "ledger", "mining"],
+  "Startups & Business Tech": ["startup", "venture capital", "vc", "funding", "acquisition", "ipo", "founder", "unicorn", "enterprise", "business"],
+  "Consumer Tech": ["smartphone", "iphone", "android", "gadget", "laptop", "wearable", "smartwatch", "tv", "audio", "camera", "tablet"]
 };
 
-export async function getTechNews(category: string = 'LATEST'): Promise<Article[]> {
-  try {
-    const feedsToFetch = RSS_FEEDS;
+function classifyArticle(title: string, description: string): string[] {
+  const categories: string[] = [];
+  const text = `${title} ${description}`.toLowerCase();
 
-    const feedPromises = feedsToFetch.map(async (feed) => {
+  for (const [category, keywords] of Object.entries(CATEGORY_MAP)) {
+    if (keywords.some(keyword => text.includes(keyword.toLowerCase()))) {
+      categories.push(category);
+    }
+  }
+
+  return categories.length > 0 ? categories : ["General Tech"];
+}
+
+export async function getTechNews(): Promise<Article[]> {
+  try {
+    const feedPromises = RSS_FEEDS.map(async (feed) => {
       try {
         const parsedFeed = await parser.parseURL(feed.url);
         
-        let items = parsedFeed.items;
-
-        // Apply keyword filtering for specific categories
-        if (category !== 'LATEST') {
-          const keywords = CATEGORY_KEYWORDS[category] || [];
-          items = items.filter(item => {
-            const searchField = `${item.title} ${item.contentSnippet} ${item.content}`.toLowerCase();
-            return keywords.some(keyword => searchField.includes(keyword.toLowerCase()));
-          });
-        }
-
-        return items.map(item => ({
-          title: item.title || '',
-          description: item.contentSnippet || item.content || '',
-          url: item.link || '',
-          urlToImage: (item as any).enclosure?.url || extractImageFromContent(item.content || '') || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
-          publishedAt: item.pubDate || new Date().toISOString(),
-          source: { name: feed.name }
-        }));
+        return parsedFeed.items.map(item => {
+          const title = item.title || '';
+          const description = item.contentSnippet || item.content || '';
+          
+          return {
+            title,
+            description,
+            url: item.link || '',
+            urlToImage: (item as any).enclosure?.url || extractImageFromContent(item.content || '') || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
+            publishedAt: item.pubDate || new Date().toISOString(),
+            source: { name: feed.name },
+            categories: classifyArticle(title, description)
+          };
+        });
       } catch (e) {
         console.error(`Error fetching feed ${feed.name}:`, e);
         return [];
@@ -62,11 +74,17 @@ export async function getTechNews(category: string = 'LATEST'): Promise<Article[
     });
 
     const results = await Promise.all(feedPromises);
-    const allArticles = results.flat().sort((a, b) => 
+    
+    // Flatten, remove duplicates by URL, and sort by date
+    const uniqueArticles = Array.from(
+      new Map(results.flat().map(item => [item.url, item])).values()
+    );
+
+    const sortedArticles = uniqueArticles.sort((a, b) => 
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     );
 
-    return allArticles.slice(0, 20); // Return top 20 latest articles
+    return sortedArticles.slice(0, 30); // Return top 30 latest articles
   } catch (error) {
     console.error("Error fetching news:", error);
     return [];

@@ -17,8 +17,15 @@ export default function NewsCard({ article }: { article: Article }) {
           className="object-cover group-hover:scale-110 transition-transform duration-500 grayscale group-hover:grayscale-0"
           onError={() => setImgSrc('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800')}
         />
-        <div className="absolute top-4 left-4 bg-neo-green text-black text-sm font-black px-3 py-1 border-2 border-black shadow-neo-sm uppercase">
+        <div className="absolute top-4 left-4 bg-neo-green text-black text-[10px] font-black px-3 py-1 border-2 border-black shadow-neo-sm uppercase">
           {article.source.name}
+        </div>
+        <div className="absolute bottom-4 right-4 flex flex-wrap justify-end gap-1 max-w-[70%]">
+          {article.categories.map(cat => (
+            <span key={cat} className="bg-white text-black text-[8px] font-bold px-1.5 py-0.5 border border-black shadow-neo-xs uppercase">
+              {cat}
+            </span>
+          ))}
         </div>
       </div>
       <div className="p-6 flex-grow flex flex-col bg-white">
