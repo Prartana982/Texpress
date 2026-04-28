@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f0f0f0;
+  --foreground: #000000;
+  --neo-green: #00ff66;
+  --neo-green-dark: #00cc52;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-neo-green: var(--neo-green);
+  --color-neo-green-dark: var(--neo-green-dark);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --shadow-neo: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-neo-lg: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-neo-sm: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.neo-box {
+  @apply border-2 border-black shadow-neo bg-white transition-all duration-200;
+}
+
+.neo-box:hover {
+  @apply translate-x-[1px] translate-y-[1px] shadow-neo-sm;
+}
+
+.neo-button {
+  @apply border-2 border-black shadow-neo px-4 py-2 font-bold transition-all duration-200 active:shadow-none active:translate-x-[4px] active:translate-y-[4px];
+}
