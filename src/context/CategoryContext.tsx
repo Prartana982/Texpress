@@ -16,18 +16,23 @@ export type Category =
   | 'Consumer Tech' 
   | 'General Tech';
 
+export type DateFilter = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH';
+
 interface CategoryContextType {
   category: Category;
   setCategory: (category: Category) => void;
+  dateFilter: DateFilter;
+  setDateFilter: (filter: DateFilter) => void;
 }
 
 const CategoryContext = createContext<CategoryContextType | undefined>(undefined);
 
 export function CategoryProvider({ children }: { children: ReactNode }) {
   const [category, setCategory] = useState<Category>('ALL');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('ALL');
 
   return (
-    <CategoryContext.Provider value={{ category, setCategory }}>
+    <CategoryContext.Provider value={{ category, setCategory, dateFilter, setDateFilter }}>
       {children}
     </CategoryContext.Provider>
   );

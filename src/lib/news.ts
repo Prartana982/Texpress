@@ -84,7 +84,7 @@ export async function getTechNews(): Promise<Article[]> {
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     );
 
-    return sortedArticles.slice(0, 30); // Return top 30 latest articles
+    return sortedArticles.slice(0, 100); // Increased limit to ensure Week/Month filters have data to show
   } catch (error) {
     console.error("Error fetching news:", error);
     return [];
