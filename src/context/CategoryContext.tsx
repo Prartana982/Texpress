@@ -23,6 +23,10 @@ interface CategoryContextType {
   setCategory: (category: Category) => void;
   dateFilter: DateFilter;
   setDateFilter: (filter: DateFilter) => void;
+  selectedMonth: string;
+  setSelectedMonth: (month: string) => void;
+  availableMonths: string[];
+  setAvailableMonths: (months: string[]) => void;
 }
 
 const CategoryContext = createContext<CategoryContextType | undefined>(undefined);
@@ -30,9 +34,20 @@ const CategoryContext = createContext<CategoryContextType | undefined>(undefined
 export function CategoryProvider({ children }: { children: ReactNode }) {
   const [category, setCategory] = useState<Category>('ALL');
   const [dateFilter, setDateFilter] = useState<DateFilter>('ALL');
+  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
 
   return (
-    <CategoryContext.Provider value={{ category, setCategory, dateFilter, setDateFilter }}>
+    <CategoryContext.Provider value={{ 
+      category, 
+      setCategory, 
+      dateFilter, 
+      setDateFilter,
+      selectedMonth,
+      setSelectedMonth,
+      availableMonths,
+      setAvailableMonths
+    }}>
       {children}
     </CategoryContext.Provider>
   );

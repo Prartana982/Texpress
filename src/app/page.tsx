@@ -6,7 +6,7 @@ import NewsCard from "@/components/NewsCard";
 import { useCategory } from "@/context/CategoryContext";
 
 export default function Home() {
-  const { category, dateFilter } = useCategory();
+  const { category, dateFilter, selectedMonth, setAvailableMonths } = useCategory();
   const [allNews, setAllNews] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(12);
@@ -16,46 +16,69 @@ export default function Home() {
       setLoading(true);
       const data = await getTechNews();
       setAllNews(data);
+      
+      // Extract available months for the Header dropdown
+      const months = new Set<string>();
+      data.forEach(article => {
+        const date = new Date(article.publishedAt);
+        if (!isNaN(date.getTime())) {
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          months.add(monthKey);
+        }
+      });
+      setAvailableMonths(Array.from(months).sort().reverse());
+      
       setLoading(false);
     }
     fetchNews();
-  }, []);
+  }, [setAvailableMonths]);
 
   // Reset pagination when filter changes
   useEffect(() => {
     setVisibleCount(12);
-  }, [category, dateFilter]);
+  }, [category, dateFilter, selectedMonth]);
 
   const filteredNews = useMemo(() => {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
     
+    // Safety check: if no news yet, return empty
+    if (!allNews || allNews.length === 0) return [];
+
     return allNews.filter(article => {
       // 1. Category logic
-      const matchesCategory = category === 'ALL' || article.categories.includes(category);
+      const matchesCategory = category === 'ALL' || (article.categories && article.categories.includes(category));
       if (!matchesCategory) return false;
 
-      // 2. Date logic
-      if (dateFilter === 'ALL') return true;
-
-      const pubDate = new Date(article.publishedAt);
+      // 2. Date Filtering Logic (MUTUALLY EXCLUSIVE)
+      const pubDateString = article.publishedAt;
+      const pubDate = new Date(pubDateString);
+      
       if (isNaN(pubDate.getTime())) return false;
 
-      const diffInHrs = (now.getTime() - pubDate.getTime()) / (1000 * 60 * 60);
+      // Selection for preset intervals
+      if (dateFilter === 'ALL') return true;
 
+      // If a specific month is selected via "MONTH" filter dropdown
+      if (dateFilter === 'MONTH') {
+        if (selectedMonth && selectedMonth !== 'ALL') {
+          const articleMonth = `${pubDate.getFullYear()}-${String(pubDate.getMonth() + 1).padStart(2, '0')}`;
+          return articleMonth === selectedMonth;
+        }
+        // If dateFilter is MONTH but selectedMonth is ALL, show everything from the CURRENT calendar month
+        return pubDate.getMonth() === now.getMonth() && pubDate.getFullYear() === now.getFullYear();
+      }
+
+      const diffInHrs = (now.getTime() - pubDate.getTime()) / (1000 * 60 * 60);
       switch (dateFilter) {
         case 'TODAY':
           return diffInHrs <= 24;
         case 'WEEK':
-          return diffInHrs <= 24 * 7;
-        case 'MONTH':
-          return pubDate.getMonth() === currentMonth && pubDate.getFullYear() === currentYear;
+          return diffInHrs <= 168; // 24 * 7
         default:
           return true;
       }
     });
-  }, [allNews, category, dateFilter]);
+  }, [allNews, category, dateFilter, selectedMonth]);
 
   const visibleArticles = useMemo(() => {
     return filteredNews.slice(0, visibleCount);

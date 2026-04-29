@@ -15,10 +15,11 @@ export interface Article {
 const parser = new Parser();
 
 const RSS_FEEDS = [
+  { name: 'Wired', url: 'https://www.wired.com/feed/rss' },
   { name: 'TechCrunch', url: 'https://techcrunch.com/feed/' },
   { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml' },
-  { name: 'Wired', url: 'https://www.wired.com/feed/rss' },
-  { name: 'Hacker News', url: 'https://news.ycombinator.com/rss' }
+  { name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index' },
+  { name: 'Engadget', url: 'https://www.engadget.com/rss.xml' }
 ];
 
 export const CATEGORY_MAP: Record<string, string[]> = {
@@ -51,42 +52,58 @@ export async function getTechNews(): Promise<Article[]> {
   try {
     const feedPromises = RSS_FEEDS.map(async (feed) => {
       try {
-        const parsedFeed = await parser.parseURL(feed.url);
+        // Use a different proxy (cors-anywhere or similar pattern) OR try the 'get' endpoint again with better error handling
+        // Switching back to the JSON endpoint but with a more robust extraction to handle network failures
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`);
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
-        return parsedFeed.items.map(item => {
+        const data = await response.json();
+        const xmlContent = data.contents;
+
+        if (!xmlContent || (!xmlContent.includes('<rss') && !xmlContent.includes('<feed'))) {
+          return [];
+        }
+
+        const parsedEntries = await parser.parseString(xmlContent);
+        
+        return parsedEntries.items.map(item => {
           const title = item.title || '';
-          const description = item.contentSnippet || item.content || '';
+          const rawDescription = item.contentSnippet || item.content || '';
+          const description = rawDescription.replace(/<[^>]*>?/gm, '').slice(0, 200) + '...';
+          const pubDate = item.isoDate || item.pubDate || new Date().toISOString();
           
           return {
             title,
             description,
             url: item.link || '',
             urlToImage: (item as any).enclosure?.url || extractImageFromContent(item.content || '') || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
-            publishedAt: item.pubDate || new Date().toISOString(),
+            publishedAt: pubDate,
             source: { name: feed.name },
             categories: classifyArticle(title, description)
           };
         });
       } catch (e) {
-        console.error(`Error fetching feed ${feed.name}:`, e);
+        // Log locally but don't throw to prevent Promise.all failure
+        console.warn(`Failed to fetch ${feed.name}:`, e);
         return [];
       }
     });
 
-    const results = await Promise.all(feedPromises);
-    
-    // Flatten, remove duplicates by URL, and sort by date
-    const uniqueArticles = Array.from(
-      new Map(results.flat().map(item => [item.url, item])).values()
-    );
+    const resultsByFeed = await Promise.all(feedPromises);
+    const combined = resultsByFeed.flat().filter(a => a && a.title);
 
-    const sortedArticles = uniqueArticles.sort((a, b) => 
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
+    // Deduplicate by URL
+    const seen = new Set();
+    const unique = combined.filter(a => {
+      if (seen.has(a.url)) return false;
+      seen.add(a.url);
+      return true;
+    });
 
-    return sortedArticles.slice(0, 100); // Increased limit to ensure Week/Month filters have data to show
+    return unique.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
   } catch (error) {
-    console.error("Error fetching news:", error);
+    console.error("Critical error in getTechNews:", error);
     return [];
   }
 }
