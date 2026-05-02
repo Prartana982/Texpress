@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useCategory, Category } from "@/context/CategoryContext";
+import { useSession, signOut } from "next-auth/react";
+import Link from 'next/link';
 
 export default function Header() {
   const [isMonthOpen, setIsMonthOpen] = useState(false);
@@ -14,6 +16,8 @@ export default function Header() {
     setSelectedMonth, 
     availableMonths 
   } = useCategory();
+
+  const { data: session } = useSession();
 
   const categories: Category[] = [
     'ALL', 
@@ -38,15 +42,42 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b-4 border-black bg-neo-green py-6 shadow-neo-sm">
       <div className="container mx-auto px-4 flex flex-col items-center gap-8">
-        <div 
-          className="text-5xl font-black uppercase tracking-tighter border-4 border-black bg-white px-8 py-2 shadow-neo cursor-pointer transition-transform hover:-rotate-1 active:scale-95"
-          onClick={() => { 
-            setCategory('ALL'); 
-            setDateFilter('ALL'); 
-            setSelectedMonth('ALL');
-          }}
-        >
-          Texpress
+        <div className="w-full flex justify-between items-center relative">
+          <div className="flex-1"></div>
+          
+          <div 
+            className="text-5xl font-black uppercase tracking-tighter border-4 border-black bg-white px-8 py-2 shadow-neo cursor-pointer transition-transform hover:-rotate-1 active:scale-95 mx-auto"
+            onClick={() => { 
+              setCategory('ALL'); 
+              setDateFilter('ALL'); 
+              setSelectedMonth('ALL');
+            }}
+          >
+            Texpress
+          </div>
+
+          <div className="flex-1 flex justify-end">
+            {session ? (
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-black uppercase bg-white border-2 border-black px-3 py-1 shadow-neo-xs">
+                  {session.user?.name || session.user?.email}
+                </span>
+                <button
+                  onClick={() => signOut()}
+                  className="neo-button text-[10px] font-black uppercase bg-red-400 border-2 border-black px-4 py-1 shadow-neo-xs hover:bg-black hover:text-white transition-all"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="neo-button text-[10px] font-black uppercase bg-white border-2 border-black px-4 py-1 shadow-neo-xs hover:bg-black hover:text-white transition-all"
+              >
+                Login
+              </Link>
+            )}
+          </div>
         </div>
 
         <div className="w-full space-y-6">

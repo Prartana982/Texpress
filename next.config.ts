@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: '**.theverge.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.engadget.com',
       }
     ],
   },

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CategoryProvider } from "@/context/CategoryContext";
 import Header from "@/components/Header";
+import { Providers } from "@/components/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,12 +30,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#f0f0f0] text-black min-h-screen flex flex-col`}
       >
-        <CategoryProvider>
-          <Header />
-          <main className="flex-grow container mx-auto px-4 py-12">
-            {children}
-          </main>
-        </CategoryProvider>
+        <Providers>
+          <CategoryProvider>
+            <Header />
+            <main className="flex-grow container mx-auto px-4 py-12">
+              {children}
+            </main>
+          </CategoryProvider>
+        </Providers>
         <footer className="border-t-4 border-black bg-white py-8">
           <div className="container mx-auto px-4 text-center font-bold uppercase tracking-widest">
             © {new Date().getFullYear()} Texpress News // Built for the future
