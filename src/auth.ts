@@ -28,15 +28,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
-      const isOnDashboard = !nextUrl.pathname.startsWith('/login') && !nextUrl.pathname.startsWith('/signup')
+      // Only protect the dashboard/news if needed, but here we want to allow the Landing page at '/'
+      // Actually, if we want '/' to show DIFFERENT content based on auth, we shouldn't block '/' here.
       
-      if (isOnDashboard) {
-        if (isLoggedIn) return true
-        return false // Redirect unauthenticated users to login page
-      } else if (isLoggedIn) {
-        return Response.redirect(new URL('/', nextUrl))
-      }
-      return true
+      return true // Let the page component handle the conditional rendering
     },
   },
 })

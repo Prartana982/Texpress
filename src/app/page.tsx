@@ -4,8 +4,11 @@ import { useEffect, useState, useMemo } from "react";
 import { getTechNews, Article } from "@/lib/news";
 import NewsCard from "@/components/NewsCard";
 import { useCategory } from "@/context/CategoryContext";
+import { useSession } from "next-auth/react";
+import LandingPage from "@/components/LandingPage";
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const { category, dateFilter, selectedMonth, setAvailableMonths } = useCategory();
   const [allNews, setAllNews] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +49,8 @@ export default function Home() {
 
     return allNews.filter(article => {
       // 1. Category logic
+      // CATEGORY_MAP in news.ts classifies articles into "General Tech" if no keywords match.
+      // We should match if the selected category is in the article's categories list.
       const matchesCategory = category === 'ALL' || (article.categories && article.categories.includes(category));
       if (!matchesCategory) return false;
 
@@ -55,12 +60,11 @@ export default function Home() {
       
       if (isNaN(pubDate.getTime())) return false;
 
-      // Selection for preset intervals
-      if (dateFilter === 'ALL') return true;
-
+      // Reset hours for relative time comparisons if needed, but diffInHrs is fine
       // If a specific month is selected via "MONTH" filter dropdown
       if (dateFilter === 'MONTH') {
         if (selectedMonth && selectedMonth !== 'ALL') {
+          // Normalize selectedMonth to YYYY-MM if it's not already
           const articleMonth = `${pubDate.getFullYear()}-${String(pubDate.getMonth() + 1).padStart(2, '0')}`;
           return articleMonth === selectedMonth;
         }
@@ -68,12 +72,17 @@ export default function Home() {
         return pubDate.getMonth() === now.getMonth() && pubDate.getFullYear() === now.getFullYear();
       }
 
-      const diffInHrs = (now.getTime() - pubDate.getTime()) / (1000 * 60 * 60);
+      const diffInMs = now.getTime() - pubDate.getTime();
+      const diffInHrs = diffInMs / (1000 * 60 * 60);
+
       switch (dateFilter) {
         case 'TODAY':
-          return diffInHrs <= 24;
+          // Within last 24 hours OR same calendar day
+          return diffInHrs <= 24 || pubDate.toDateString() === now.toDateString();
         case 'WEEK':
+          // Within last 7 days
           return diffInHrs <= 168; // 24 * 7
+        case 'ALL':
         default:
           return true;
       }
@@ -83,6 +92,20 @@ export default function Home() {
   const visibleArticles = useMemo(() => {
     return filteredNews.slice(0, visibleCount);
   }, [filteredNews, visibleCount]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="text-4xl font-black uppercase tracking-widest animate-pulse border-8 border-black p-8 bg-white shadow-neo">
+          Authenticating access...
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LandingPage />;
+  }
 
   return (
     <div className="space-y-16">

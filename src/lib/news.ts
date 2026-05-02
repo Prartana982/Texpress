@@ -48,12 +48,30 @@ function classifyArticle(title: string, description: string): string[] {
   return categories.length > 0 ? categories : ["General Tech"];
 }
 
+function extractImageFromContent(item: any): string | null {
+  // 1. Try media:content from Atom/RSS
+  if (item['media:content'] && item['media:content'].$ && item['media:content'].$.url) {
+    return item['media:content'].$.url;
+  }
+
+  // 2. Try content/contentSnippet for <img> tags
+  const content = item.content || item.contentSnippet || '';
+  const imgRegex = /<img[^>]+src=["']([^"'>]+)["']/;
+  const match = content.match(imgRegex);
+  if (match) return match[1];
+
+  // 3. Try description for <img> tags (Wired often puts it here)
+  const description = item.description || '';
+  const descMatch = description.match(imgRegex);
+  if (descMatch) return descMatch[1];
+  
+  return null;
+}
+
 export async function getTechNews(): Promise<Article[]> {
   try {
     const feedPromises = RSS_FEEDS.map(async (feed) => {
       try {
-        // Use a different proxy (cors-anywhere or similar pattern) OR try the 'get' endpoint again with better error handling
-        // Switching back to the JSON endpoint but with a more robust extraction to handle network failures
         const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`);
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -69,7 +87,7 @@ export async function getTechNews(): Promise<Article[]> {
         
         return parsedEntries.items.map(item => {
           const title = item.title || '';
-          const rawDescription = item.contentSnippet || item.content || '';
+          const rawDescription = item.contentSnippet || item.content || item.description || '';
           const description = rawDescription.replace(/<[^>]*>?/gm, '').slice(0, 200) + '...';
           const pubDate = item.isoDate || item.pubDate || new Date().toISOString();
           
@@ -77,7 +95,7 @@ export async function getTechNews(): Promise<Article[]> {
             title,
             description,
             url: item.link || '',
-            urlToImage: (item as any).enclosure?.url || extractImageFromContent(item.content || '') || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
+            urlToImage: (item as any).enclosure?.url || extractImageFromContent(item) || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
             publishedAt: pubDate,
             source: { name: feed.name },
             categories: classifyArticle(title, description)
@@ -108,8 +126,3 @@ export async function getTechNews(): Promise<Article[]> {
   }
 }
 
-function extractImageFromContent(content: string): string | null {
-  const imgRegex = /<img[^>]+src="([^">]+)"/;
-  const match = content.match(imgRegex);
-  return match ? match[1] : null;
-}
