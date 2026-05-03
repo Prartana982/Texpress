@@ -1,5 +1,8 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import bcrypt from "bcryptjs"
+import dbConnect from "@/lib/dbConnect"
+import User from "@/lib/models/User"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -10,15 +13,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // This is a mock authentication for demonstration.
-        // In a real app, you would verify against a database.
-        const mockUser = { id: "1", name: "Demo User", email: "demo@example.com" }
-        
-        if (credentials?.email === "demo@example.com" && credentials?.password === "password") {
-          return mockUser
+        if (!credentials?.email || !credentials?.password) {
+          return null
         }
-        
-        return null
+
+        await dbConnect()
+
+        // Find user by email and include password field
+        const user = await User.findOne({ email: credentials.email }).select("+password")
+
+        if (!user) {
+          return null
+        }
+
+        // Check if password matches
+        const isMatch = await bcrypt.compare(credentials.password as string, user.password)
+
+        if (!isMatch) {
+          return null
+        }
+
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+        }
       },
     }),
   ],
@@ -26,12 +45,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
+    jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+      }
+      return token
+    },
+    session({ session, token }) {
+      if (session.user) {
+        (session.user as any).id = token.id
+      }
+      return session
+    },
     authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user
-      // Only protect the dashboard/news if needed, but here we want to allow the Landing page at '/'
-      // Actually, if we want '/' to show DIFFERENT content based on auth, we shouldn't block '/' here.
-      
-      return true // Let the page component handle the conditional rendering
+      return true
     },
   },
 })
+
