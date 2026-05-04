@@ -54,13 +54,20 @@ function extractImageFromContent(item: any): string | null {
     return item['media:content'].$.url;
   }
 
-  // 2. Try content/contentSnippet for <img> tags
-  const content = item.content || item.contentSnippet || '';
+  // 2. Try media:group (Common in some feeds like YouTube or Wired)
+  if (item['media:group'] && item['media:group']['media:content']) {
+    const media = item['media:group']['media:content'];
+    if (Array.isArray(media) && media.length > 0) return media[0].$.url;
+    if (media.$ && media.$.url) return media.$.url;
+  }
+
+  // 3. Try content/contentSnippet for <img> tags
+  const content = item.content || item.contentSnippet || item.summary || '';
   const imgRegex = /<img[^>]+src=["']([^"'>]+)["']/;
   const match = content.match(imgRegex);
   if (match) return match[1];
 
-  // 3. Try description for <img> tags (Wired often puts it here)
+  // 4. Try description for <img> tags (Wired often puts it here)
   const description = item.description || '';
   const descMatch = description.match(imgRegex);
   if (descMatch) return descMatch[1];
