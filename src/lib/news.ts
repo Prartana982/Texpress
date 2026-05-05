@@ -50,8 +50,10 @@ function classifyArticle(title: string, description: string): string[] {
 
 function extractImageFromContent(item: any): string | null {
   // 1. Try media:content from Atom/RSS
-  if (item['media:content'] && item['media:content'].$ && item['media:content'].$.url) {
-    return item['media:content'].$.url;
+  if (item['media:content']) {
+    const media = item['media:content'];
+    if (Array.isArray(media) && media[0]?.$.url) return media[0].$.url;
+    if (media.$?.url) return media.$.url;
   }
 
   // 2. Try media:group (Common in some feeds like YouTube or Wired)
@@ -61,38 +63,99 @@ function extractImageFromContent(item: any): string | null {
     if (media.$ && media.$.url) return media.$.url;
   }
 
-  // 3. Try content/contentSnippet for <img> tags
-  const content = item.content || item.contentSnippet || item.summary || '';
+  // 3. Try standard enclosure
+  if (item.enclosure && item.enclosure.url) {
+    return item.enclosure.url;
+  }
+
+  // 4. Try parsing <img> from any possible text field
+  const content = (item.content || item.contentSnippet || item.summary || item.description || (item['content:encoded'] || '')).toString();
   const imgRegex = /<img[^>]+src=["']([^"'>]+)["']/;
   const match = content.match(imgRegex);
-  if (match) return match[1];
+  if (match) {
+    const url = match[1];
+    return url.startsWith('//') ? `https:${url}` : url;
+  }
 
-  // 4. Try description for <img> tags (Wired often puts it here)
-  const description = item.description || '';
-  const descMatch = description.match(imgRegex);
-  if (descMatch) return descMatch[1];
+  // 5. Try tech-specific metadata fields
+  if (item['og:image']) return item['og:image'];
+  if (item['twitter:image']) return item['twitter:image'];
   
   return null;
 }
 
 export async function getTechNews(): Promise<Article[]> {
+  const isServer = typeof window === 'undefined';
+  
   try {
     const feedPromises = RSS_FEEDS.map(async (feed) => {
       try {
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`);
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        console.log(`Fetching ${feed.name} from ${feed.url}`);
         
-        const data = await response.json();
-        const xmlContent = data.contents;
+        let xmlContent = '';
+        
+        if (isServer) {
+          // Server-side: Direct fetch
+          const response = await fetch(feed.url, { next: { revalidate: 3600 } });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          xmlContent = await response.text();
+        } else {
+          // Client-side: Use multiple specific strategies
+          try {
+            // Strategy 1: AllOrigins (standard)
+            const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}&t=${Date.now()}`);
+            if (response.ok) {
+              const data = await response.json();
+              xmlContent = data.contents;
+            }
+          } catch (e) {
+            console.warn(`AllOrigins failed for ${feed.name}`);
+          }
 
-        if (!xmlContent || (!xmlContent.includes('<rss') && !xmlContent.includes('<feed'))) {
+          if (!xmlContent) {
+            try {
+              // Strategy 2: RSS2JSON (often more stable for popular feeds)
+              const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
+              if (response.ok) {
+                const data = await response.json();
+                if (data.items) {
+                  return data.items.map((item: any) => {
+                    // Normalize rss2json item to look like rss-parser item for image extraction
+                    const normalizedItem = {
+                      ...item,
+                      content: item.content || item.description,
+                      enclosure: item.enclosure?.link ? { url: item.enclosure.link } : undefined
+                    };
+                    
+                    const image = item.thumbnail || extractImageFromContent(normalizedItem);
+
+                    return {
+                      title: item.title || '',
+                      description: (item.description || '').replace(/<[^>]*>?/gm, '').slice(0, 200) + '...',
+                      url: item.link || '',
+                      urlToImage: image || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
+                      publishedAt: item.pubDate || new Date().toISOString(),
+                      source: { name: feed.name },
+                      categories: classifyArticle(item.title, item.description)
+                    };
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn(`Fallback failed for ${feed.name}`);
+            }
+          }
+        }
+
+        if (!xmlContent) {
+          console.warn(`No content for ${feed.name}`);
           return [];
         }
 
-        const parsedEntries = await parser.parseString(xmlContent);
+        const parsedEntries = await parser.parseString(xmlContent.trim());
+        console.log(`Found ${parsedEntries.items?.length || 0} items for ${feed.name}`);
         
-        return parsedEntries.items.map(item => {
+        return (parsedEntries.items || []).map(item => {
           const title = item.title || '';
           const rawDescription = item.contentSnippet || item.content || item.description || '';
           const description = rawDescription.replace(/<[^>]*>?/gm, '').slice(0, 200) + '...';
@@ -102,7 +165,7 @@ export async function getTechNews(): Promise<Article[]> {
             title,
             description,
             url: item.link || '',
-            urlToImage: (item as any).enclosure?.url || extractImageFromContent(item) || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
+            urlToImage: extractImageFromContent(item) || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
             publishedAt: pubDate,
             source: { name: feed.name },
             categories: classifyArticle(title, description)
