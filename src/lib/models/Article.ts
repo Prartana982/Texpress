@@ -10,6 +10,10 @@ const ArticleSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  keyTakeaway: {
+    type: String,
+    required: true,
+  },
   categories: {
     type: [String],
     required: true,

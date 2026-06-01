@@ -5,14 +5,14 @@ import { Article } from '@/lib/news';
 
 export default function NewsCard({ article }: { article: Article }) {
   const [imgSrc, setImgSrc] = useState(article.urlToImage);
-  const [aiData, setAiData] = useState<{ summary: string; categories: string[] } | null>(null);
+  const [aiData, setAiData] = useState<{ summary: string; keyTakeaway: string; categories?: string[] } | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
 
   useEffect(() => {
     async function fetchAIData() {
       setLoadingAI(true);
       try {
-        const res = await fetch('/api/ai-process', {
+        const res = await fetch('/api/summarize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -36,6 +36,7 @@ export default function NewsCard({ article }: { article: Article }) {
 
   const displayCategories = aiData?.categories?.length ? aiData.categories : article.categories;
   const displaySummary = aiData?.summary || article.description;
+  const keyTakeaway = aiData?.keyTakeaway;
 
   return (
     <div className="neo-box group flex flex-col h-full overflow-visible relative cursor-pointer" onClick={() => window.open(article.url, '_blank')}>
@@ -71,12 +72,28 @@ export default function NewsCard({ article }: { article: Article }) {
         <h3 className="text-2xl font-black leading-none mb-4 uppercase tracking-tighter group-hover:text-neo-green-dark transition-colors underline decoration-4 decoration-black group-hover:decoration-neo-green">
           {article.title}
         </h3>
-        <p className="font-bold text-gray-700 text-sm line-clamp-4 mb-6 flex-grow leading-relaxed">
-          {displaySummary}
-        </p>
+        
+        <div className="flex-grow">
+          <div className="mb-4">
+            <span className="text-[10px] font-black bg-black text-white px-2 py-0.5 uppercase mb-2 inline-block">📝 Summary</span>
+            <p className="font-bold text-gray-700 text-sm leading-relaxed">
+              {displaySummary}
+            </p>
+          </div>
+
+          {keyTakeaway && (
+            <div className="mb-6">
+              <span className="text-[10px] font-black bg-neo-green text-black px-2 py-0.5 border border-black uppercase mb-2 inline-block shadow-neo-xs">💡 Key Takeaway</span>
+              <p className="font-black text-black text-sm leading-relaxed italic">
+                {keyTakeaway}
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="mt-auto">
           <div className="neo-button bg-black text-white group-hover:bg-neo-green group-hover:text-black inline-block w-full text-center uppercase tracking-widest text-sm">
-            Read Article _
+            Read Full Article →
           </div>
         </div>
       </div>

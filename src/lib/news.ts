@@ -10,6 +10,8 @@ export interface Article {
     name: string;
   };
   categories: string[];
+  summary?: string;
+  keyTakeaway?: string;
 }
 
 const parser = new Parser();
