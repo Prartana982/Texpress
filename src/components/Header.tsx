@@ -40,13 +40,13 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b-4 border-black bg-neo-green py-6 shadow-neo-sm">
-      <div className="container mx-auto px-4 flex flex-col items-center gap-8">
-        <div className="w-full flex justify-between items-center relative">
-          <div className="flex-1"></div>
+    <header className="sticky top-0 z-50 w-full border-b-4 border-black bg-neo-green py-3 shadow-neo-sm">
+      <div className="container mx-auto px-4 flex flex-col items-center gap-4">
+        <div className="w-full flex justify-between items-center relative gap-4">
+          <div className="flex-1 hidden md:block"></div>
           
           <div 
-            className="text-5xl font-black uppercase tracking-tighter border-4 border-black bg-white px-8 py-2 shadow-neo cursor-pointer transition-transform hover:-rotate-1 active:scale-95 mx-auto"
+            className="text-2xl md:text-3xl font-black uppercase tracking-tighter border-4 border-black bg-white px-4 py-1 shadow-neo cursor-pointer transition-transform hover:-rotate-1 active:scale-95 mx-auto"
             onClick={() => { 
               setCategory('ALL'); 
               setDateFilter('ALL'); 
@@ -56,15 +56,15 @@ export default function Header() {
             Texpress
           </div>
 
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex justify-end items-center gap-2">
             {session ? (
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-black uppercase bg-white border-2 border-black px-3 py-1 shadow-neo-xs">
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline-block text-[10px] font-black uppercase bg-white border-2 border-black px-2 py-1 shadow-neo-xs truncate max-w-[120px]">
                   {session.user?.name || session.user?.email}
                 </span>
                 <button
                   onClick={() => signOut()}
-                  className="neo-button text-[10px] font-black uppercase bg-red-400 border-2 border-black px-4 py-1 shadow-neo-xs hover:bg-black hover:text-white transition-all"
+                  className="neo-button text-[9px] font-black uppercase bg-red-400 border-2 border-black px-3 py-1 shadow-neo-xs hover:bg-black hover:text-white transition-all whitespace-nowrap"
                 >
                   Logout
                 </button>
@@ -73,13 +73,13 @@ export default function Header() {
               <div className="flex gap-2">
                 <Link
                   href="/login"
-                  className="neo-button text-[10px] font-black uppercase bg-white border-2 border-black px-4 py-1 shadow-neo-xs hover:bg-black hover:text-white transition-all"
+                  className="neo-button text-[9px] font-black uppercase bg-white border-2 border-black px-3 py-1 shadow-neo-xs hover:bg-black hover:text-white transition-all whitespace-nowrap"
                 >
                   Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="neo-button text-[10px] font-black uppercase bg-black text-white border-2 border-black px-4 py-1 shadow-neo-xs hover:bg-white hover:text-black transition-all"
+                  className="neo-button text-[9px] font-black uppercase bg-black text-white border-2 border-black px-3 py-1 shadow-neo-xs hover:bg-white hover:text-black transition-all whitespace-nowrap"
                 >
                   Signup
                 </Link>
@@ -89,17 +89,17 @@ export default function Header() {
         </div>
 
         {session && (
-          <div className="w-full space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-            {/* Categories */}
-            <nav className="flex flex-wrap items-center justify-center gap-3 w-full">
+          <div className="w-full space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            {/* Categories - Scrollable */}
+            <nav className="flex items-center gap-2 w-full overflow-x-auto no-scrollbar pb-1 -mx-2 px-2 scroll-smooth">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCategory(cat)}
-                  className={`neo-button text-[10px] md:text-xs font-black uppercase tracking-widest transition-all px-4 py-2 border-2 ${
+                  className={`flex-none text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all px-3 py-1.5 border-2 ${
                     category === cat 
-                      ? 'bg-black text-white -translate-y-1 shadow-neo-sm border-black' 
-                      : 'bg-white text-black border-black hover:bg-neo-green-dark hover:text-white shadow-neo-xs'
+                      ? 'bg-black text-white -translate-y-0.5 shadow-neo-xs border-black' 
+                      : 'bg-white text-black border-black hover:bg-neo-green-dark hover:text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                   }`}
                 >
                   {cat}
@@ -107,10 +107,10 @@ export default function Header() {
               ))}
             </nav>
 
-            {/* Date Filters */}
-            <div className="flex items-center justify-center gap-4 border-t-2 border-black/10 pt-4">
-              <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Filter by Date:</span>
-              <div className="flex flex-wrap items-center justify-center gap-2">
+            {/* Date Filters - More Compact */}
+            <div className="flex items-center justify-center gap-3 border-t-2 border-black/10 pt-3">
+              <span className="hidden sm:inline-block text-[9px] font-black uppercase tracking-widest opacity-50">Filter:</span>
+              <div className="flex items-center justify-center gap-2">
                 {dateOptions.map((opt) => (
                   <button
                     key={opt.value}
@@ -119,9 +119,9 @@ export default function Header() {
                       setSelectedMonth('ALL');
                       setIsMonthOpen(false);
                     }}
-                    className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2 transition-all ${
+                    className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 border-2 transition-all ${
                       dateFilter === opt.value
-                        ? 'bg-black text-white border-black'
+                        ? 'bg-black text-white border-black shadow-neo-xs'
                         : 'bg-white text-black border-black hover:bg-gray-100'
                     }`}
                   >
@@ -135,27 +135,27 @@ export default function Header() {
                     onClick={() => {
                       setIsMonthOpen(!isMonthOpen);
                     }}
-                    className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2 transition-all flex items-center gap-2 ${
+                    className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 border-2 transition-all flex items-center gap-2 ${
                       dateFilter === 'MONTH'
-                        ? 'bg-black text-white border-black'
+                        ? 'bg-black text-white border-black shadow-neo-xs'
                         : 'bg-white text-black border-black hover:bg-gray-100'
                     }`}
                   >
                     {selectedMonth === 'ALL' 
-                      ? 'Select Month' 
+                      ? 'Month' 
                       : new Date(selectedMonth + "-02").toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    <span className={`transform transition-transform ${isMonthOpen ? 'rotate-180' : ''}`}>▼</span>
+                    <span className={`text-[8px] transform transition-transform ${isMonthOpen ? 'rotate-180' : ''}`}>▼</span>
                   </button>
 
                   {isMonthOpen && (
-                    <div className="absolute top-full left-0 mt-2 bg-white border-4 border-black shadow-neo z-50 min-w-[150px] max-h-48 overflow-y-auto">
+                    <div className="absolute top-full right-0 mt-2 bg-white border-4 border-black shadow-neo z-50 min-w-[140px] max-h-48 overflow-y-auto">
                       <button
                         onClick={() => {
                           setDateFilter('MONTH');
                           setSelectedMonth('ALL');
                           setIsMonthOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-[10px] font-black uppercase hover:bg-neo-green transition-colors border-b-2 border-black"
+                        className="w-full text-left px-3 py-2 text-[9px] font-black uppercase hover:bg-neo-green transition-colors border-b-2 border-black"
                       >
                         This Month
                       </button>
@@ -167,7 +167,7 @@ export default function Header() {
                             setSelectedMonth(m);
                             setIsMonthOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2 text-[10px] font-black uppercase hover:bg-neo-green transition-colors border-b-2 border-black last:border-b-0"
+                          className="w-full text-left px-3 py-2 text-[9px] font-black uppercase hover:bg-neo-green transition-colors border-b-2 border-black last:border-b-0"
                         >
                           {new Date(m + "-02").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                         </button>

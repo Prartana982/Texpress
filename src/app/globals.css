@@ -36,3 +36,31 @@ body {
 .neo-button {
   @apply border-2 border-black shadow-neo px-4 py-2 font-bold transition-all duration-200 active:shadow-none active:translate-x-[4px] active:translate-y-[4px];
 }
+
+@layer utilities {
+  .bg-grid {
+    background-image: radial-gradient(circle, #000 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .bg-dots {
+    background-image: radial-gradient(#000 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+    display: inline-flex;
+    width: max-content;
+  }
+}

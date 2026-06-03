@@ -95,9 +95,31 @@ export default function Home() {
 
   if (status === "loading") {
     return (
-      <div className="flex justify-center py-20">
-        <div className="text-4xl font-black uppercase tracking-widest animate-pulse border-8 border-black p-8 bg-white shadow-neo">
-          Authenticating access...
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-700">
+        <div className="relative">
+          <div className="absolute inset-0 bg-neo-green blur-2xl opacity-20 animate-pulse"></div>
+          <div className="relative border-8 border-black bg-white p-12 shadow-neo-lg -rotate-1">
+            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-black animate-pulse">
+              Authenticating <br /> Access...
+            </h2>
+          </div>
+          <div className="absolute -bottom-4 -right-4 bg-black text-neo-green px-4 py-1 font-black text-xs uppercase tracking-widest">
+            Identity Scan In Progress
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <div 
+              key={i} 
+              className="w-4 h-4 bg-black border-2 border-black animate-bounce"
+              style={{ animationDelay: `${i * 0.1}s` }}
+            ></div>
+          ))}
+        </div>
+
+        <div className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30">
+          Neural Link // Establishing Connection // Node 01
         </div>
       </div>
     );
