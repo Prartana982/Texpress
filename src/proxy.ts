@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
-export async function proxy(request) {
+export async function proxy(request: NextRequest) {
   // We can let NextAuth handle the check if it supports the new proxy export,
   // or manually call auth() if it's a wrapper.
   // For now, let's fix the export name error first.
